@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ea580c">
+<meta name="description" content="Stopwatch Waktu Kerja Efektif (WKE) per kategori pelayanan">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>WKE - Waktu Kerja Efektif</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- SCREEN: MENU UTAMA -->
+  <div class="screen active" id="screen-main">
+    <div class="main-inner">
+      <div class="main-logo">WKE</div>
+      <div class="main-subtitle">Waktu Kerja Efektif</div>
+      <div class="main-actions">
+        <div id="session-card"></div>
+        <button class="btn btn-primary btn-lg btn-full" id="btn-mulai" onclick="mulai()">Mulai</button>
+        <button class="btn btn-secondary btn-lg btn-full" onclick="openData()">Data &amp; Rata-rata</button>
+        <div id="main-queue"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: DATA AUDIT -->
+  <div class="screen" id="screen-form">
+    <div class="page-header">
+      <div class="page-title">Data Audit</div>
+      <div class="page-step">Waktu Kerja Efektif</div>
+    </div>
+    <div class="page-content">
+      <div class="form-grid">
+        <div class="form-group form-group-wide">
+          <label class="form-label" for="toko-input">Nama Toko</label>
+          <div class="dropdown-wrap" id="toko-dropdown-wrap">
+            <div class="dropdown-input-wrap">
+              <input type="text" class="form-control" id="toko-input" placeholder="Cari nama toko..." autocomplete="off"
+                oninput="filterToko(this.value)" onclick="openDropdown()" onfocus="openDropdown()">
+              <svg class="dropdown-arrow" id="toko-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="dropdown-list" id="toko-list"></div>
+          </div>
+        </div>
+        <div class="form-group form-group-wide">
+          <label class="form-label" for="auditor-input">Nama Auditor</label>
+          <input type="text" class="form-control" id="auditor-input" placeholder="Masukkan nama auditor" autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="tanggal-input">Tanggal</label>
+          <input type="date" class="form-control" id="tanggal-input">
+        </div>
+      </div>
+    </div>
+    <div class="page-footer">
+      <button class="btn btn-secondary btn-compact" onclick="goTo('main')">Kembali</button>
+      <button class="btn btn-outline btn-compact" onclick="resetForm()">Reset</button>
+      <button class="btn btn-primary" onclick="lanjutForm()">Lanjutkan</button>
+    </div>
+  </div>
+
+  <!-- SCREEN: STOPWATCH -->
+  <div class="screen" id="screen-timer">
+    <div class="page-header">
+      <div class="header-row">
+        <div class="header-text">
+          <div class="page-title" id="timer-toko">-</div>
+          <div class="page-step" id="timer-meta">-</div>
+        </div>
+        <div class="saved-note" id="saved-note"></div>
+      </div>
+      <div class="running-bar" id="running-bar" hidden>
+        <span class="live-dot"></span>
+        <span id="running-text">0 stopwatch berjalan</span>
+        <button class="btn-link" onclick="stopSemua()">Stop semua</button>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="timer-hint">Tap <b>&#9654;</b> untuk mulai, tap <b>&#9632;</b> untuk berhenti. Beberapa stopwatch bisa berjalan bersamaan dan tetap berjalan walau aplikasi ditutup. Tap angka waktu untuk input manual.</div>
+      <div id="timer-content"></div>
+      <div class="danger-zone">
+        <button class="btn-link btn-link-danger" onclick="resetSemuaWaktu()">Reset semua waktu &amp; CU</button>
+      </div>
+    </div>
+    <div class="page-footer">
+      <button class="btn btn-secondary btn-compact" onclick="goTo('form')">Kembali</button>
+      <button class="btn btn-outline btn-compact" onclick="simpanProgres()">Simpan</button>
+      <button class="btn btn-primary" onclick="selesaiAudit()">Selesai</button>
+    </div>
+  </div>
+
+  <!-- SCREEN: RINGKASAN SEBELUM UPLOAD -->
+  <div class="screen" id="screen-ringkasan">
+    <div class="page-header">
+      <div class="page-title">Ringkasan</div>
+      <div class="page-step">Periksa data sebelum diupload ke spreadsheet</div>
+    </div>
+    <div class="page-content" id="ringkasan-content"></div>
+    <div class="page-footer">
+      <button class="btn btn-secondary btn-compact" onclick="goTo('timer')">Kembali</button>
+      <button class="btn btn-primary" id="btn-upload" onclick="uploadSesi()">Upload</button>
+    </div>
+  </div>
+
+  <!-- SCREEN: DATA DARI SPREADSHEET -->
+  <div class="screen" id="screen-data">
+    <div class="page-header">
+      <div class="header-row">
+        <div class="header-text">
+          <div class="page-title">Data WKE</div>
+          <div class="page-step" id="data-status">-</div>
+        </div>
+        <button class="icon-btn" id="btn-refresh" onclick="loadData()" aria-label="Muat ulang data" title="Muat ulang">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+      </div>
+      <div class="tabs" role="tablist">
+        <button class="tab active" role="tab" data-tab="riwayat" onclick="setDataTab('riwayat')">Riwayat</button>
+        <button class="tab" role="tab" data-tab="rata" onclick="setDataTab('rata')">Rata-rata</button>
+      </div>
+    </div>
+    <div class="page-content">
+      <div id="queue-box"></div>
+      <div id="tab-riwayat">
+        <input type="search" class="form-control search-input" id="data-search" placeholder="Cari toko atau auditor..." oninput="renderRiwayat()">
+        <div id="riwayat-list"></div>
+      </div>
+      <div id="tab-rata" hidden>
+        <div class="segmented" role="group" aria-label="Cakupan rata-rata">
+          <button class="active" data-mode="semua" onclick="setAvgMode('semua')">Semua Toko</button>
+          <button data-mode="toko" onclick="setAvgMode('toko')">Per Toko</button>
+        </div>
+        <select class="form-control avg-select" id="avg-toko" onchange="renderRataRata()" hidden></select>
+        <div id="avg-content"></div>
+      </div>
+    </div>
+    <div class="page-footer">
+      <button class="btn btn-secondary" onclick="goTo('main')">Kembali</button>
+      <a class="btn btn-outline" id="link-spreadsheet" target="_blank" rel="noopener">Buka Spreadsheet</a>
+    </div>
+  </div>
+
+  <!-- SCREEN: DETAIL SATU DATA -->
+  <div class="screen" id="screen-detail">
+    <div class="page-header">
+      <div class="page-title" id="detail-title">Detail</div>
+      <div class="page-step" id="detail-sub"></div>
+    </div>
+    <div class="page-content" id="detail-content"></div>
+    <div class="page-footer">
+      <button class="btn btn-secondary" onclick="goTo('data')">Kembali</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL: INPUT WAKTU MANUAL -->
+<div class="modal-overlay" id="manual-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div id="manual-title">Input Waktu</div>
+      <div class="modal-sub" id="manual-sub"></div>
+    </div>
+    <div class="modal-body">
+      <div class="hms">
+        <label class="hms-field"><input type="number" class="form-control no-spin" id="manual-h" min="0" inputmode="numeric"><span>Jam</span></label>
+        <label class="hms-field"><input type="number" class="form-control no-spin" id="manual-m" min="0" inputmode="numeric"><span>Menit</span></label>
+        <label class="hms-field"><input type="number" class="form-control no-spin" id="manual-s" min="0" inputmode="numeric"><span>Detik</span></label>
+      </div>
+      <div class="manual-note" id="manual-note" hidden>Stopwatch sedang berjalan dan akan lanjut menghitung dari waktu yang diisi.</div>
+    </div>
+    <div class="modal-footer modal-footer-row">
+      <button class="btn btn-secondary" onclick="closeModal('manual-modal')">Batal</button>
+      <button class="btn btn-outline" onclick="nolkanManual()">Nol</button>
+      <button class="btn btn-primary" onclick="simpanManual()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: KONFIRMASI -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal-box">
+    <div class="modal-header" id="confirm-title">Konfirmasi</div>
+    <div class="modal-body" id="confirm-msg"></div>
+    <div class="modal-footer modal-footer-row">
+      <button class="btn btn-secondary" id="confirm-cancel">Batal</button>
+      <button class="btn btn-primary" id="confirm-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script src="js/data.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/riwayat.js"></script>
+</body>
+</html>

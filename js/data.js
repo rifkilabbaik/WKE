@@ -1,0 +1,183 @@
+// Data master WKE (Waktu Kerja Efektif).
+
+// Endpoint App Script yang menulis & membaca spreadsheet (kode ada di apps-script/Code.gs).
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6yH9O1jzsgC6-CozpEq4e5gH1p76mIkEoH9WCoLmhcFymaeYYyKMqVboggDIn44Qo4Q/exec';
+const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/183rw_qJzd8HCbObvYjiwB0mG1dTrzNxVQtn36xutkMw/edit';
+
+// Daftar toko disalin dari aplikasi Takbiran (js/data.js) agar nama toko
+// di kedua aplikasi sama persis. Perbarui keduanya bersamaan.
+const TOKO_LIST = [
+  "LC CIPASIR",
+  "LC Cileunyi",
+  "LC PANDANWANGI",
+  "LC Jatos",
+  "LC SIMPANG LIMA",
+  "LC CIMANUK",
+  "LC Indihiang",
+  "LC Siliwangi Tasik",
+  "LC Singaparna",
+  "LC Bulak Laut",
+  "LC Margaasih",
+  "LC Katapang",
+  "LC Gading Tutuka",
+  "LC Alfathu",
+  "LC Ciwidey",
+  "LC Sukamenak",
+  "LC RANCAMANYAR",
+  "LC Baleendah",
+  "LC Bojongsoang",
+  "LC Perumnas Cirebon",
+  "LC PERJUANGAN",
+  "LC Sumber",
+  "LC Weru",
+  "LC Sudirman Indramayu",
+  "LC MAJALENGKA",
+  "LC Angkrek",
+  "LC Tegal",
+  "LC Cibaraja",
+  "LC Palabuhan Ratu",
+  "LC Caringin",
+  "LC Cidahu",
+  "LC Cimanggu",
+  "LC Cibinong",
+  "LC CAGAR ALAM",
+  "LC Antapani",
+  "LC Babakansari",
+  "LC Derwati",
+  "LC Batununggal",
+  "LC Sukagalih",
+  "LC TUBAGUS ISMAIL",
+  "LC Ujung berung",
+  "LC Margahayu",
+  "LC BANTENG",
+  "LC Ahmad Yani",
+  "LC Munjul",
+  "LC Galuhmas",
+  "LC Mega Regency",
+  "LC cihampelas",
+  "LC PERMATA CIMAHI",
+  "LC Sarimanah",
+  "LC GEGERKALONG",
+  "LC BHAYANGKARA",
+  "LC Lopang",
+  "LC Cipocok",
+  "LC Ciwaru",
+  "LC Kaligandu",
+  "LC Pakupatan",
+  "LC Ciruas",
+  "LC Pipitan",
+  "LC Kragilan",
+  "LC Cikande",
+  "LC Kasemen",
+  "LC Ciracas",
+  "LC Legok",
+  "LC Kelapa Dua",
+  "LC Baros",
+  "LC Petir",
+  "LC WARUNG GUNUNG",
+  "LC Multatuli",
+  "LC Juanda",
+  "LC ONA SILIWANGI",
+  "LC Gardu Tanjak",
+  "LC Majasari",
+  "LC Taktakan",
+  "LC PCI",
+  "LC Taman Cilegon Indah",
+  "LC Cibeber",
+  "LC Kalitimbang",
+  "LC Serdang",
+  "LC Waringin Kurung",
+  "LC Lebak Indah",
+  "LC Seneja",
+  "LC Anyer",
+  "LC BBS",
+  "LC Kramatwatu",
+  "LC Warnasari",
+  "LC Krenceng",
+  "LC Kebon Dalam",
+  "LC Jombang",
+  "LC Bojonegara",
+  "LC Merak",
+  "LC Grogol",
+  "LC Temu Putih",
+  "LC Tegal Cabe",
+  "LC Menes",
+  "LC Labuan",
+  "LC Panimbang",
+  "LC Bukit Barisan",
+  "LC Rumbai",
+  "LC Panam Simpang Satria",
+  "OFC legok jabar",
+  "OFC Cibatu",
+  "OFC CiCURUG"
+];
+
+// Kategori stopwatch. `key` dipakai untuk penyimpanan lokal, jangan diubah
+// setelah aplikasi dipakai; `label` boleh diubah. Judul kolom di spreadsheet
+// adalah "<Seksi> - <label>", kecuali item yang punya `header` sendiri.
+const KATEGORI = [
+  {
+    key: 'kasir',
+    label: 'Kasir',
+    items: [
+      { key: 'kasir_taking_order', label: 'Taking order' },
+      { key: 'kasir_overhandle_shift', label: 'Overhandle shift' },
+      { key: 'kasir_report_2jam', label: 'Report per 2 jam' },
+      { key: 'kasir_closing_shift', label: 'Closing shift' },
+    ],
+  },
+  {
+    key: 'server',
+    label: 'Server',
+    items: [
+      { key: 'server_prepare_fast', label: 'Prepare fast product' },
+      { key: 'server_serving_fast', label: 'Serving fast product' },
+      { key: 'server_prepare_side', label: 'Prepare side menu' },
+      { key: 'server_serving_side', label: 'Serving side menu' },
+      { key: 'server_backup_prepare_fast', label: 'Back up prepare fast product' },
+      { key: 'server_serving_beverages', label: 'Serving beverages' },
+      { key: 'server_prepare_beverages', label: 'Prepare beverages' },
+      { key: 'server_backup_kasir', label: 'Back up kasir' },
+      { key: 'server_online', label: 'Handling online input & serving' },
+      { key: 'server_lunchbox', label: 'Prepare lunchbox' },
+    ],
+  },
+  {
+    key: 'dining',
+    label: 'Dining',
+    items: [
+      { key: 'dining_nyapu', label: 'Waktu nyapu' },
+      { key: 'dining_pel', label: 'Waktu pel' },
+      { key: 'dining_lap_meja', label: 'Waktu lap meja' },
+      { key: 'dining_kaca', label: 'Waktu membersihkan kaca' },
+      { key: 'dining_dinding', label: 'Waktu membersihkan dinding dll' },
+      { key: 'dining_mushola', label: 'Waktu pembersihan mushola' },
+      { key: 'dining_antar', label: 'Mengantar makanan yang tertunda' },
+      { key: 'dining_feedback', label: 'Meminta feedback customer' },
+    ],
+  },
+  {
+    key: 'santai',
+    label: 'Crew Santai',
+    items: [
+      { key: 'crew_santai', label: 'Waktu crew santai', header: 'Waktu crew santai' },
+    ],
+  },
+];
+
+// Jumlah customer (CU) per kanal. Judul kolom: "CU - <label>".
+const CU_LIST = [
+  { key: 'cu_dine_in', label: 'Dine In' },
+  { key: 'cu_take_away', label: 'Take Away' },
+  { key: 'cu_shopeefood', label: 'ShopeeFood' },
+  { key: 'cu_gofood', label: 'GoFood' },
+  { key: 'cu_grabfood', label: 'GrabFood' },
+  { key: 'cu_catering', label: 'Catering' },
+];
+
+function itemHeader(sec, item) {
+  return item.header || `${sec.label} - ${item.label}`;
+}
+function cuHeader(cu) {
+  return `CU - ${cu.label}`;
+}

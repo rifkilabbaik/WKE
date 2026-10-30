@@ -1,0 +1,99 @@
+# WKE - Waktu Kerja Efektif
+
+Aplikasi web (PWA) untuk mengukur **Waktu Kerja Efektif** crew di pelayanan
+memakai stopwatch per kategori. Hasilnya diupload ke Google Spreadsheet.
+
+Gaya tampilan dan daftar toko mengikuti aplikasi **Takbiran**.
+
+## Fitur
+
+- **Data audit**: nama toko (dropdown + pencarian, daftar dari Takbiran), nama
+  auditor (diingat untuk audit berikutnya), dan tanggal (otomatis hari ini, bisa diubah).
+  Tombol: *Kembali*, *Reset*, *Lanjutkan*.
+- **Stopwatch per kategori** (Kasir, Server, Dining, Crew Santai):
+  - Tap ▶ untuk mulai, ■ untuk berhenti. Stopwatch tidak berhenti sampai di-stop.
+  - Beberapa stopwatch bisa berjalan bersamaan.
+  - Tap angka waktu untuk **input manual** (jam/menit/detik).
+  - Subtotal per seksi, tombol *Stop semua*.
+- **Jumlah CU**: Dine In, Take Away, ShopeeFood, GoFood, GrabFood, Catering (tombol − / +).
+- **Progres tidak hilang**: semua isian otomatis tersimpan di perangkat. Stopwatch
+  menyimpan jam mulainya, jadi **tetap menghitung walau aplikasi/browser ditutup**.
+  Saat dibuka lagi, aplikasi langsung kembali ke layar stopwatch.
+  Ada juga tombol *Simpan*.
+- **Selesai → Ringkasan → Upload** ke spreadsheet. Kalau gagal (misalnya offline),
+  data masuk **antrian** di perangkat dan dikirim ulang otomatis saat online.
+- **Halaman Data**:
+  - *Riwayat*: daftar data di spreadsheet (tanggal, nama toko, nama auditor),
+    bisa dicari. Tap untuk melihat semua isiannya.
+  - *Rata-rata*: rata-rata waktu tiap kategori untuk **semua toko**, atau **per toko**
+    (tabel perbandingan antar toko + rincian satu toko).
+- Bisa dipasang ke layar utama HP (PWA) dan dibuka offline.
+
+## Pasang App Script (wajib, sekali saja)
+
+Aplikasi berkomunikasi dengan spreadsheet lewat App Script di
+`apps-script/Code.gs`. URL yang dipakai aplikasi ada di `js/data.js` (`APPS_SCRIPT_URL`).
+
+1. Buka [spreadsheet WKE](https://docs.google.com/spreadsheets/d/183rw_qJzd8HCbObvYjiwB0mG1dTrzNxVQtn36xutkMw/edit)
+   → **Ekstensi → Apps Script** (atau buka project App Script yang sudah ada).
+2. Ganti seluruh isi `Code.gs` dengan isi file `apps-script/Code.gs` di repo ini, lalu **Simpan**.
+3. Pilih fungsi `setup` di toolbar lalu klik **Jalankan**. Izinkan akses ke spreadsheet saat diminta.
+4. Deploy:
+   - **Sudah punya deployment** (URL `.../AKfycby6yH9O.../exec`): **Deploy → Kelola deployment**
+     → ikon pensil → *Versi*: **Versi baru** → **Deploy**. URL tetap sama.
+   - **Belum punya**: **Deploy → Deployment baru** → jenis **Aplikasi web**, lalu salin
+     URL `/exec` yang baru ke `APPS_SCRIPT_URL` di `js/data.js`.
+   - Pengaturan wajib: *Jalankan sebagai*: **Saya**, *Yang memiliki akses*: **Siapa saja**.
+
+Setiap kali `Code.gs` diubah, ulangi langkah 4 (versi baru), kalau tidak perubahan tidak aktif.
+
+### Format spreadsheet
+
+Data disimpan di sheet **Data WKE** (sheet pertama dipakai langsung bila masih kosong,
+kalau tidak dibuat sheet baru). Satu baris = satu audit:
+
+| Tanggal | Nama Toko | Nama Auditor | Kasir - Taking order | … | Waktu crew santai | CU - Dine In | … | Waktu Upload | ID |
+|---|---|---|---|---|---|---|---|---|---|
+
+- Kolom waktu berformat durasi `[h]:mm:ss`, jadi bisa langsung dijumlah/dirata-rata di Sheets.
+- Kolom `ID` mencegah data ganda saat upload diulang.
+- Kalau kategori baru ditambahkan di aplikasi, kolomnya otomatis ditambahkan di ujung kanan.
+
+## Menjalankan / hosting
+
+Aplikasi berupa file statis (tanpa build). Pilihan hosting termudah adalah **GitHub Pages**:
+repo → **Settings → Pages** → *Deploy from a branch* → pilih branch dan folder `/ (root)`.
+
+Untuk mencoba di komputer:
+
+```bash
+python3 -m http.server 8000
+```
+
+lalu buka `http://localhost:8000`.
+
+## Mengubah data master
+
+Semua ada di `js/data.js`:
+
+- `TOKO_LIST`: disalin dari Takbiran (`js/data.js`). Perbarui keduanya bersamaan.
+- `KATEGORI`: seksi dan item stopwatch. Jangan ubah `key` item yang sudah dipakai
+  (dipakai untuk menyimpan progres); `label` boleh diubah, tetapi ingat label juga
+  menjadi judul kolom di spreadsheet.
+- `CU_LIST`: kanal jumlah customer.
+
+Setelah mengubah file aplikasi, naikkan `CACHE_VERSION` di `sw.js` agar HP yang sudah
+memasang aplikasi mendapat versi baru.
+
+## Struktur file
+
+```
+index.html          Semua layar aplikasi
+css/app.css         Tampilan
+js/data.js          Data master + URL App Script & spreadsheet
+js/api.js           Penyimpanan lokal, upload, antrian, ambil data
+js/app.js           Navigasi, form, stopwatch, ringkasan & upload
+js/riwayat.js       Halaman data: riwayat, detail, rata-rata
+apps-script/Code.gs Backend Google Apps Script
+sw.js, manifest.json, icons/   PWA (offline & pasang ke layar utama)
+```
