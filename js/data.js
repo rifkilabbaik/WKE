@@ -2,7 +2,6 @@
 
 // Endpoint App Script yang menulis & membaca spreadsheet (kode ada di apps-script/Code.gs).
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6yH9O1jzsgC6-CozpEq4e5gH1p76mIkEoH9WCoLmhcFymaeYYyKMqVboggDIn44Qo4Q/exec';
-const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/183rw_qJzd8HCbObvYjiwB0mG1dTrzNxVQtn36xutkMw/edit';
 
 // Daftar toko disalin dari aplikasi Takbiran (js/data.js) agar nama toko
 // di kedua aplikasi sama persis. Perbarui keduanya bersamaan.

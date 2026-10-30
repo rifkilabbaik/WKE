@@ -198,8 +198,23 @@ function renderDetail() {
     ['Nama Auditor', r.auditor],
   ];
   if (r.waktuUpload) rows.push(['Waktu Upload', r.waktuUpload]);
+  if (r.terakhirDiedit) rows.push(['Terakhir Diedit', r.terakhirDiedit]);
   if (r.pending) rows.push(['Status', 'Menunggu upload']);
   document.getElementById('detail-content').innerHTML = summaryHtml(rows) + recordBodyHtml(r);
+  // Baris yang dibuat manual di sheet (tanpa ID) tidak bisa ditimpa, jadi tidak bisa diedit.
+  document.getElementById('btn-edit').hidden = !r.id;
+}
+
+function editDetail() {
+  const r = detailRecord;
+  if (!r || !r.id) return;
+  if (r.pending) {
+    const original = loadQueue().find(q => q.id === r.id);
+    if (!original) { showToast('Data sudah tidak ada di antrian'); goTo('data'); return; }
+    mulaiEdit(r, { kind: 'queue', original });
+  } else {
+    mulaiEdit(r, { kind: 'server' });
+  }
 }
 
 // ===== RATA-RATA =====
@@ -209,17 +224,21 @@ function setAvgMode(mode) {
   renderRataRata();
 }
 
+// durasi = rata-rata total per audit; perHitungan = rata-rata tiap kali dihitung.
 function averageOf(records) {
   const n = records.length || 1;
   const durasi = {};
+  const perHitungan = {};
   const cu = {};
   ALL_ITEMS.forEach(({ item }) => {
-    durasi[item.key] = records.reduce((a, r) => a + (r.durasi[item.key] || 0), 0) / n;
+    durasi[item.key] = sum(records.map(r => r.durasi[item.key] || 0)) / n;
+    const all = records.flatMap(r => (r.hitungan && r.hitungan[item.key]) || []);
+    perHitungan[item.key] = { n: all.length, avg: all.length ? sum(all) / all.length : 0 };
   });
   CU_LIST.forEach(c => {
-    cu[c.key] = records.reduce((a, r) => a + (r.cu[c.key] || 0), 0) / n;
+    cu[c.key] = sum(records.map(r => r.cu[c.key] || 0)) / n;
   });
-  return { durasi, cu };
+  return { durasi, perHitungan, cu };
 }
 
 function groupByToko(records) {

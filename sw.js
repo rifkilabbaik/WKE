@@ -1,6 +1,6 @@
 // Service worker WKE: aplikasi tetap bisa dibuka & dipakai saat offline.
 // Naikkan CACHE_VERSION setiap kali aset di PRECACHE berubah.
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `wke-${CACHE_VERSION}`;
 
 const PRECACHE = [

@@ -70,7 +70,7 @@
       <div class="header-row">
         <div class="header-text">
           <div class="page-title" id="timer-toko">-</div>
-          <div class="page-step" id="timer-meta">-</div>
+          <div class="page-step"><span class="edit-badge" id="timer-edit-badge" hidden>Mode edit</span><span id="timer-meta">-</span></div>
         </div>
         <div class="saved-note" id="saved-note"></div>
       </div>
@@ -81,7 +81,7 @@
       </div>
     </div>
     <div class="page-content">
-      <div class="timer-hint">Tap <b>&#9654;</b> untuk mulai, tap <b>&#9632;</b> untuk berhenti. Beberapa stopwatch bisa berjalan bersamaan dan tetap berjalan walau aplikasi ditutup. Tap angka waktu untuk input manual.</div>
+      <div class="timer-hint">Tap <b>&#9654;</b> untuk mulai, <b>&#9632;</b> untuk berhenti. Setelah berhenti, tap <b>+ Tambah hitungan</b> untuk menghitung lagi di kategori yang sama. Beberapa stopwatch bisa berjalan bersamaan dan tetap berjalan walau aplikasi ditutup. Tap angka waktu untuk input manual.</div>
       <div id="timer-content"></div>
       <div class="danger-zone">
         <button class="btn-link btn-link-danger" onclick="resetSemuaWaktu()">Reset semua waktu &amp; CU</button>
@@ -98,7 +98,7 @@
   <div class="screen" id="screen-ringkasan">
     <div class="page-header">
       <div class="page-title">Ringkasan</div>
-      <div class="page-step">Periksa data sebelum diupload ke spreadsheet</div>
+      <div class="page-step" id="ringkasan-sub">Periksa data sebelum diupload ke spreadsheet</div>
     </div>
     <div class="page-content" id="ringkasan-content"></div>
     <div class="page-footer">
@@ -141,7 +141,6 @@
     </div>
     <div class="page-footer">
       <button class="btn btn-secondary" onclick="goTo('main')">Kembali</button>
-      <a class="btn btn-outline" id="link-spreadsheet" target="_blank" rel="noopener">Buka Spreadsheet</a>
     </div>
   </div>
 
@@ -154,6 +153,7 @@
     <div class="page-content" id="detail-content"></div>
     <div class="page-footer">
       <button class="btn btn-secondary" onclick="goTo('data')">Kembali</button>
+      <button class="btn btn-primary" id="btn-edit" onclick="editDetail()">Edit</button>
     </div>
   </div>
 
@@ -173,6 +173,9 @@
         <label class="hms-field"><input type="number" class="form-control no-spin" id="manual-s" min="0" inputmode="numeric"><span>Detik</span></label>
       </div>
       <div class="manual-note" id="manual-note" hidden>Stopwatch sedang berjalan dan akan lanjut menghitung dari waktu yang diisi.</div>
+      <div class="manual-extra" id="manual-hapus" hidden>
+        <button type="button" class="btn-link btn-link-danger" onclick="hapusHitungan()">Hapus hitungan ini</button>
+      </div>
     </div>
     <div class="modal-footer modal-footer-row">
       <button class="btn btn-secondary" onclick="closeModal('manual-modal')">Batal</button>

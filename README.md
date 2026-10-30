@@ -12,8 +12,11 @@ Gaya tampilan dan daftar toko mengikuti aplikasi **Takbiran**.
   Tombol: *Kembali*, *Reset*, *Lanjutkan*.
 - **Stopwatch per kategori** (Kasir, Server, Dining, Crew Santai):
   - Tap ▶ untuk mulai, ■ untuk berhenti. Stopwatch tidak berhenti sampai di-stop.
+  - Setelah berhenti, tombol **+ Tambah hitungan** memulai hitungan baru di kategori
+    yang sama, jadi satu kategori bisa punya lebih dari satu hasil hitungan.
+    Total kategori = jumlah semua hitungannya.
   - Beberapa stopwatch bisa berjalan bersamaan.
-  - Tap angka waktu untuk **input manual** (jam/menit/detik).
+  - Tap angka waktu untuk **input manual** (jam/menit/detik) atau menghapus satu hitungan.
   - Subtotal per seksi, tombol *Stop semua*.
 - **Jumlah CU**: Dine In, Take Away, ShopeeFood, GoFood, GrabFood, Catering (tombol − / +).
 - **Progres tidak hilang**: semua isian otomatis tersimpan di perangkat. Stopwatch
@@ -24,9 +27,13 @@ Gaya tampilan dan daftar toko mengikuti aplikasi **Takbiran**.
   data masuk **antrian** di perangkat dan dikirim ulang otomatis saat online.
 - **Halaman Data**:
   - *Riwayat*: daftar data di spreadsheet (tanggal, nama toko, nama auditor),
-    bisa dicari. Tap untuk melihat semua isiannya.
+    bisa dicari. Tap untuk melihat semua isiannya, termasuk tiap hasil hitungan.
+  - **Edit**: di halaman detail, tombol *Edit* membuka data itu kembali di layar
+    stopwatch (bisa ubah waktu, tambah hitungan, ubah CU/toko/auditor/tanggal).
+    *Simpan Perubahan* menimpa baris yang sama di spreadsheet. *Batalkan edit* di menu
+    utama membuang perubahan tanpa mengubah spreadsheet.
   - *Rata-rata*: rata-rata waktu tiap kategori untuk **semua toko**, atau **per toko**
-    (tabel perbandingan antar toko + rincian satu toko).
+    (tabel perbandingan antar toko + rincian satu toko), ditambah rata-rata per hitungan.
 - Bisa dipasang ke layar utama HP (PWA) dan dibuka offline.
 
 ## Pasang App Script (wajib, sekali saja)
@@ -46,17 +53,25 @@ Aplikasi berkomunikasi dengan spreadsheet lewat App Script di
    - Pengaturan wajib: *Jalankan sebagai*: **Saya**, *Yang memiliki akses*: **Siapa saja**.
 
 Setiap kali `Code.gs` diubah, ulangi langkah 4 (versi baru), kalau tidak perubahan tidak aktif.
+Fitur **Edit** butuh `Code.gs` versi terbaru; dengan versi lama, perubahan dianggap data ganda dan tidak tersimpan.
 
 ### Format spreadsheet
 
 Data disimpan di sheet **Data WKE** (sheet pertama dipakai langsung bila masih kosong,
 kalau tidak dibuat sheet baru). Satu baris = satu audit:
 
-| Tanggal | Nama Toko | Nama Auditor | Kasir - Taking order | … | Waktu crew santai | CU - Dine In | … | Waktu Upload | ID |
-|---|---|---|---|---|---|---|---|---|---|
+| Tanggal | Nama Toko | Nama Auditor | Kasir - Taking order | … | Waktu crew santai | CU - Dine In | … | Rincian Hitungan | Waktu Upload | ID | Terakhir Diedit |
+|---|---|---|---|---|---|---|---|---|---|---|---|
 
-- Kolom waktu berformat durasi `[h]:mm:ss`, jadi bisa langsung dijumlah/dirata-rata di Sheets.
-- Kolom `ID` mencegah data ganda saat upload diulang.
+- Kolom waktu berisi **total** semua hitungan kategori itu, berformat durasi `[h]:mm:ss`,
+  jadi bisa langsung dijumlah/dirata-rata di Sheets.
+- `Rincian Hitungan` mencatat tiap hasil untuk kategori yang dihitung lebih dari sekali,
+  satu baris per kategori, misalnya `Kasir - Taking order: 00:01:20, 00:00:45`.
+  Kalau total kategori diubah langsung di sheet, aplikasi memakai total itu sebagai satu hitungan.
+- Kolom `ID` mencegah data ganda saat upload diulang, dan dipakai untuk menemukan baris saat edit.
+  Baris yang ditambahkan manual tanpa ID tidak bisa diedit dari aplikasi.
+- `Terakhir Diedit` terisi saat data diubah lewat tombol Edit; `Waktu Upload` tetap waktu upload pertama.
+- Kolom lain yang Anda tambahkan sendiri di sheet tidak ikut tertimpa saat edit.
 - Kalau kategori baru ditambahkan di aplikasi, kolomnya otomatis ditambahkan di ujung kanan.
 
 ## Menjalankan / hosting

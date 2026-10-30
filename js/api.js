@@ -3,7 +3,7 @@
 const STORAGE = {
   session: 'wke.session.v1',   // sesi audit yang sedang berjalan
   queue: 'wke.queue.v1',       // data selesai yang belum berhasil diupload
-  cache: 'wke.cache.v1',       // salinan terakhir data dari spreadsheet
+  cache: 'wke.cache.v2',       // salinan terakhir data dari spreadsheet
   auditor: 'wke.auditor.v1',   // nama auditor terakhir, untuk isian otomatis
 };
 
@@ -66,15 +66,43 @@ async function fetchRecords() {
 }
 
 // ===== FORMAT DATA =====
+// Kolom teks berisi tiap hasil hitungan untuk kategori yang dihitung lebih dari sekali,
+// satu baris per kategori: "Kasir - Taking order: 00:01:20, 00:00:45".
+const H_RINCIAN = 'Rincian Hitungan';
+
+const pad2 = n => String(n).padStart(2, '0');
+
+// Detik -> "HH:MM:SS" (jam boleh lebih dari 24).
+function fmtDur(sec) {
+  const s = Math.max(0, Math.round(sec || 0));
+  return `${pad2(Math.floor(s / 3600))}:${pad2(Math.floor(s / 60) % 60)}:${pad2(s % 60)}`;
+}
+
 // Record yang dikirim: kolom-kolom spreadsheet beserta tipenya, sehingga App Script
 // tidak perlu tahu daftar kategori (cukup menambah kolom yang belum ada).
-function buildUploadRecord(meta, durasi, cu) {
+// hitungan = { key: [detik, ...] }; kolom kategori berisi totalnya.
+// edit = true: menimpa baris dengan ID yang sama di spreadsheet.
+function buildUploadRecord(meta, hitungan, cu, edit) {
   const fields = [];
+  const rincian = [];
   KATEGORI.forEach(sec => sec.items.forEach(item => {
-    fields.push({ h: itemHeader(sec, item), t: 'dur', v: Math.round(durasi[item.key] || 0) });
+    const list = hitungan[item.key] || [];
+    const h = itemHeader(sec, item);
+    fields.push({ h, t: 'dur', v: list.reduce((a, s) => a + s, 0) });
+    if (list.length > 1) rincian.push(`${h}: ${list.map(s => fmtDur(s)).join(', ')}`);
   }));
   CU_LIST.forEach(c => fields.push({ h: cuHeader(c), t: 'num', v: cu[c.key] || 0 }));
-  return { id: meta.id, tanggal: meta.tanggal, toko: meta.toko, auditor: meta.auditor, fields };
+  fields.push({ h: H_RINCIAN, t: 'text', v: rincian.join('\n') });
+  return { id: meta.id, tanggal: meta.tanggal, toko: meta.toko, auditor: meta.auditor, edit: !!edit, fields };
+}
+
+function parseRincian(text) {
+  const out = {};
+  String(text == null ? '' : text).split(/\r?\n/).forEach(line => {
+    const i = line.lastIndexOf(': ');
+    if (i > 0) out[line.slice(0, i).trim()] = line.slice(i + 2).split(',').map(parseDurasi);
+  });
+  return out;
 }
 
 // "1:05:30", "05:30", atau "1.05.30" (format lokal Indonesia) -> detik.
@@ -103,9 +131,18 @@ function normalizeTanggal(text) {
 function normalizeRecord(row) {
   if (!row) return null;
   const durasi = {};
+  const hitungan = {};
   const cu = {};
+  const rincian = parseRincian(row[H_RINCIAN]);
   KATEGORI.forEach(sec => sec.items.forEach(item => {
-    durasi[item.key] = parseDurasi(row[itemHeader(sec, item)]);
+    const h = itemHeader(sec, item);
+    const total = parseDurasi(row[h]);
+    const list = (rincian[h] || []).filter(s => s > 0);
+    durasi[item.key] = total;
+    // Rincian dipakai hanya bila cocok dengan totalnya (total bisa saja diubah langsung di sheet).
+    hitungan[item.key] = list.length > 1 && Math.abs(list.reduce((a, s) => a + s, 0) - total) <= 1
+      ? list
+      : (total > 0 ? [total] : []);
   }));
   CU_LIST.forEach(c => { cu[c.key] = parseAngka(row[cuHeader(c)]); });
   return {
@@ -114,7 +151,9 @@ function normalizeRecord(row) {
     toko: row['Nama Toko'] || '',
     auditor: row['Nama Auditor'] || '',
     waktuUpload: row['Waktu Upload'] || '',
+    terakhirDiedit: row['Terakhir Diedit'] || '',
     durasi,
+    hitungan,
     cu,
   };
 }

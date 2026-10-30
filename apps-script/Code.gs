@@ -9,6 +9,7 @@
  *
  * Aplikasi mengirim daftar kolom beserta tipenya, jadi kategori baru di aplikasi
  * otomatis menjadi kolom baru di sheet tanpa perlu mengubah kode ini.
+ * Data yang diedit dari aplikasi (edit: true) menimpa baris dengan ID yang sama.
  */
 
 const SPREADSHEET_ID = '183rw_qJzd8HCbObvYjiwB0mG1dTrzNxVQtn36xutkMw';
@@ -19,6 +20,7 @@ const H_TOKO = 'Nama Toko';
 const H_AUDITOR = 'Nama Auditor';
 const H_UPLOAD = 'Waktu Upload';
 const H_ID = 'ID';
+const H_EDIT = 'Terakhir Diedit';
 
 const FORMAT_DURASI = '[h]:mm:ss';
 const FORMAT_TANGGAL = 'dd/mm/yyyy';
@@ -96,40 +98,43 @@ function saveRecord_(rec) {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sh = getSheet_();
     const fieldHeaders = rec.fields.map(function (f) { return String(f.h); });
-    const headers = ensureHeaders_(sh, [H_TANGGAL, H_TOKO, H_AUDITOR].concat(fieldHeaders, [H_UPLOAD, H_ID]));
+    const wanted = [H_TANGGAL, H_TOKO, H_AUDITOR].concat(fieldHeaders, [H_UPLOAD, H_ID]);
+    if (rec.edit) wanted.push(H_EDIT);
+    const headers = ensureHeaders_(sh, wanted);
 
-    // Upload ulang dari antrian aplikasi tidak boleh membuat baris ganda.
+    // Cari baris dengan ID yang sama.
     const idCol = headers.indexOf(H_ID) + 1;
     const lastRow = sh.getLastRow();
+    let r = 0;
     if (lastRow > 1) {
       const ids = sh.getRange(2, idCol, lastRow - 1, 1).getDisplayValues();
       for (let i = 0; i < ids.length; i++) {
-        if (ids[i][0] === String(rec.id)) return { ok: true, duplicate: true };
+        if (ids[i][0] === String(rec.id)) { r = i + 2; break; }
       }
     }
+    // Upload biasa dengan ID yang sudah ada = kiriman ulang dari antrian; jangan buat baris ganda.
+    if (r && !rec.edit) return { ok: true, duplicate: true };
+    const isNew = !r;
+    if (isNew) r = lastRow + 1;
 
-    const r = lastRow + 1;
-    const row = headers.map(function () { return ''; });
+    // Ditulis per sel agar kolom lain di baris itu (mis. rumus buatan sendiri) tidak tertimpa.
     function put(header, value, format) {
-      const c = headers.indexOf(header);
-      sh.getRange(r, c + 1).setNumberFormat(format);
-      row[c] = value;
+      sh.getRange(r, headers.indexOf(header) + 1).setNumberFormat(format).setValue(value);
     }
 
     put(H_TANGGAL, Utilities.parseDate(rec.tanggal, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd'), FORMAT_TANGGAL);
     put(H_TOKO, String(rec.toko), FORMAT_TEKS);
     put(H_AUDITOR, String(rec.auditor), FORMAT_TEKS);
     rec.fields.forEach(function (f) {
-      const v = Math.max(0, Number(f.v) || 0);
-      if (f.t === 'dur') put(String(f.h), v / 86400, FORMAT_DURASI);
-      else if (f.t === 'num') put(String(f.h), v, '0');
+      if (f.t === 'dur') put(String(f.h), Math.max(0, Number(f.v) || 0) / 86400, FORMAT_DURASI);
+      else if (f.t === 'num') put(String(f.h), Math.max(0, Number(f.v) || 0), '0');
       else put(String(f.h), String(f.v == null ? '' : f.v), FORMAT_TEKS);
     });
-    put(H_UPLOAD, new Date(), FORMAT_WAKTU);
+    if (isNew) put(H_UPLOAD, new Date(), FORMAT_WAKTU);
+    else put(H_EDIT, new Date(), FORMAT_WAKTU);
     put(H_ID, String(rec.id), FORMAT_TEKS);
 
-    sh.getRange(r, 1, 1, headers.length).setValues([row]);
-    return { ok: true, row: r };
+    return { ok: true, row: r, updated: !isNew };
   } finally {
     lock.releaseLock();
   }
@@ -158,7 +163,7 @@ function listRecords_() {
       const raw = values[i][c];
       const isDate = Object.prototype.toString.call(raw) === '[object Date]';
       if (isDate && h === H_TANGGAL) v = Utilities.formatDate(raw, tz, 'yyyy-MM-dd');
-      if (isDate && h === H_UPLOAD) v = Utilities.formatDate(raw, tz, 'yyyy-MM-dd HH:mm:ss');
+      if (isDate && (h === H_UPLOAD || h === H_EDIT)) v = Utilities.formatDate(raw, tz, 'yyyy-MM-dd HH:mm:ss');
       if (v !== '') filled = true;
       rec[h] = v;
     });
