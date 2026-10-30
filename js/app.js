@@ -509,9 +509,47 @@ function updateTimerDisplays() {
   const cuTotal = document.getElementById('cu-total');
   if (cuTotal) cuTotal.textContent = fmtAngka(sum(CU_LIST.map(c => session.cu[c.key] || 0)));
 
-  const n = runningCount();
-  document.getElementById('running-bar').hidden = n === 0;
-  document.getElementById('running-text').textContent = `${n} stopwatch berjalan`;
+  updateRunningPanel(now);
+}
+
+// Kotak di atas layar yang mengumpulkan semua stopwatch yang sedang berjalan,
+// supaya auditor tidak perlu menggulir untuk mencarinya.
+let runningSig = '';
+function updateRunningPanel(now) {
+  const running = [];
+  ALL_ITEMS.forEach(({ sec, item }) => {
+    const list = hitList(item.key);
+    list.forEach((t, i) => { if (t.start) running.push({ sec, item, t, i, multi: list.length > 1 }); });
+  });
+  document.getElementById('running-panel').hidden = !running.length;
+  document.getElementById('running-text').textContent = `${running.length} stopwatch berjalan`;
+
+  // Baris hanya dibangun ulang bila daftarnya berubah, agar tombol tidak hilang saat ditekan.
+  const sig = running.map(r => `${r.item.key}:${r.i}:${r.multi}`).join(',');
+  if (sig !== runningSig) {
+    runningSig = sig;
+    document.getElementById('running-list').innerHTML = running.map(r => `<div class="run-row">
+      <button type="button" class="run-main" onclick="lihatKategori('${r.item.key}')" aria-label="Lihat ${esc(r.item.label)}">
+        <span class="run-sec">${esc(r.sec.label)}</span>
+        <span class="run-name">${esc(r.item.label)}${r.multi ? ` <span class="run-no">#${r.i + 1}</span>` : ''}</span>
+      </button>
+      <span class="run-time" data-run-time="${r.item.key}:${r.i}">00:00:00</span>
+      <button type="button" class="run-stop" onclick="toggleTimer('${r.item.key}',${r.i})" aria-label="Stop ${esc(r.item.label)}">${ICON_STOP}</button>
+    </div>`).join('');
+  }
+  running.forEach(r => {
+    const el = document.querySelector(`[data-run-time="${r.item.key}:${r.i}"]`);
+    if (el) el.textContent = fmtDur(hitSec(r.t, now));
+  });
+}
+
+function lihatKategori(key) {
+  const el = document.getElementById('ti-' + key);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+  el.classList.remove('flash');
+  void el.offsetWidth; // mulai ulang animasi bila ditekan berulang
+  el.classList.add('flash');
 }
 
 function updateSavedNote() {

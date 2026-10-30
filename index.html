@@ -74,14 +74,17 @@
         </div>
         <div class="saved-note" id="saved-note"></div>
       </div>
-      <div class="running-bar" id="running-bar" hidden>
-        <span class="live-dot"></span>
-        <span id="running-text">0 stopwatch berjalan</span>
-        <button class="btn-link" onclick="stopSemua()">Stop semua</button>
+      <div class="running-panel" id="running-panel" hidden>
+        <div class="running-head">
+          <span class="live-dot"></span>
+          <span class="running-text" id="running-text">0 stopwatch berjalan</span>
+          <button class="btn-link" onclick="stopSemua()">Stop semua</button>
+        </div>
+        <div class="running-list" id="running-list"></div>
       </div>
     </div>
     <div class="page-content">
-      <div class="timer-hint">Tap <b>&#9654;</b> untuk mulai, <b>&#9632;</b> untuk berhenti. Setelah berhenti, tap <b>+ Tambah hitungan</b> untuk menghitung lagi di kategori yang sama. Beberapa stopwatch bisa berjalan bersamaan dan tetap berjalan walau aplikasi ditutup. Tap angka waktu untuk input manual.</div>
+      <div class="timer-hint">Tap <b>&#9654;</b> untuk mulai, <b>&#9632;</b> untuk berhenti. Setelah berhenti, tap <b>+ Tambah hitungan</b> untuk menghitung lagi di kategori yang sama. Beberapa stopwatch bisa berjalan bersamaan dan tetap berjalan walau aplikasi ditutup; semuanya dikumpulkan di kotak atas, tap namanya untuk menuju kategorinya. Tap angka waktu untuk input manual.</div>
       <div id="timer-content"></div>
       <div class="danger-zone">
         <button class="btn-link btn-link-danger" onclick="resetSemuaWaktu()">Reset semua waktu &amp; CU</button>

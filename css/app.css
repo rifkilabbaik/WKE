@@ -55,6 +55,8 @@ body {
   background: var(--surface);
   position: relative;
   overflow: hidden;
+  /* clip: layar tak aktif (digeser 30px untuk animasi) tidak bisa membuat #app ikut tergulir. */
+  overflow: clip;
 }
 
 [hidden] { display: none !important; }
@@ -316,21 +318,86 @@ input[type="number"].no-spin::-webkit-inner-spin-button { -webkit-appearance: no
 .dropdown-empty { padding: 14px; font-size: 14px; color: var(--text-light); text-align: center; }
 
 /* ===== STOPWATCH ===== */
-.running-bar {
+.running-panel {
+  margin-top: 10px;
+  background: var(--primary-light);
+  border: 1.5px solid var(--primary-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.running-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
-  padding: 6px 6px 6px 12px;
-  background: var(--primary-light);
-  border: 1px solid var(--primary-border);
-  border-radius: var(--radius-sm);
+  padding: 4px 6px 4px 12px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--primary-dark);
 }
-.running-bar span:nth-child(2) { flex: 1; }
-.running-bar .btn-link { color: var(--danger); }
+.running-text { flex: 1; }
+.running-head .btn-link { color: var(--danger); }
+/* Kira-kira 4 baris terlihat; sisanya digulir di dalam kotak agar layar tidak tertutup. */
+.running-list { max-height: 180px; overflow-y: auto; border-top: 1px solid var(--primary-border); background: var(--surface); }
+.run-row { display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 12px; border-bottom: 1px dashed var(--primary-border); }
+.run-row:last-child { border-bottom: none; }
+.run-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  background: none;
+  border: none;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.run-sec {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.run-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  /* Maksimal 2 baris: kata pembeda (mis. "kaca" vs "dinding") ada di ujung nama. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.run-main:hover .run-name { color: var(--primary); }
+.run-no { color: var(--text-muted); }
+.run-time { flex-shrink: 0; font-size: 16px; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; }
+.run-stop {
+  flex-shrink: 0;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--danger);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.run-stop:active { transform: scale(0.92); }
+.run-stop svg { width: 16px; height: 16px; }
+
+.timer-item.flash { animation: flash 1.4s ease; }
+@keyframes flash { 25%, 60% { box-shadow: 0 0 0 4px var(--primary-border); } }
+@media (prefers-reduced-motion: reduce) {
+  .timer-item.flash { animation: none; }
+}
 
 .live-dot {
   display: inline-block;
